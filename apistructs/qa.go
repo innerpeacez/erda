@@ -123,7 +123,7 @@ type CodeQualityRatingLevel string
 var (
 	CodeQualityRatingLevelA       CodeQualityRatingLevel = "A"
 	CodeQualityRatingLevelB       CodeQualityRatingLevel = "B"
-	CodeQualityRatingLevelC       CodeQualityRatingLevel = "C"
+	CodeQualityRatingLevelC       CodeQualityRatingLevel = "Cfg"
 	CodeQualityRatingLevelD       CodeQualityRatingLevel = "D"
 	CodeQualityRatingLevelE       CodeQualityRatingLevel = "E"
 	CodeQualityRatingLevelUnknown CodeQualityRatingLevel = "-"

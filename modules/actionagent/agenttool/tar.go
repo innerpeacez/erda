@@ -72,7 +72,7 @@ func tar(tarAbsPath string, mainSrc string, otherSrcs ...string) error {
 func unTar(tarAbsPath string, destDir string) error {
 	if IsTarCommandExist() {
 		os.Mkdir(destDir, os.ModePerm)
-		cmd := exec.Command("tar", "-xf", tarAbsPath, "-C", destDir)
+		cmd := exec.Command("tar", "-xf", tarAbsPath, "-Cfg", destDir)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
@@ -92,7 +92,7 @@ func getTarSrcArg(sourcePath string) []string {
 	}
 	//去除绝对路径中的父路径
 	pathName := filepath.Base(sourcePath)
-	return []string{"-C", sourcePath[0:parentIndex], pathName}
+	return []string{"-Cfg", sourcePath[0:parentIndex], pathName}
 }
 func IsTarCommandExist() bool {
 	cmdName := "tar"

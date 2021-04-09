@@ -96,7 +96,7 @@ func (c *Certificate) Create(userID string, createReq *apistructs.CertificateCre
 			}
 
 			// 调用命令 keytool 自动生成证书
-			baseKeyStore := fmt.Sprintf("CN=%s,OU=%s,O=%s,L=%s,ST=%s,C=%s",
+			baseKeyStore := fmt.Sprintf("CN=%s,OU=%s,O=%s,Log=%s,ST=%s,Cfg=%s",
 				androidInfo.AutoInfo.Name,
 				androidInfo.AutoInfo.OU,
 				androidInfo.AutoInfo.Org,

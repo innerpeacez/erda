@@ -108,12 +108,12 @@ func TestCombineLabels(t *testing.T) {
 	assert.Equal(t, map[string]string{
 		"A": "v1",
 		"B": "v4",
-		"C": "v3",
+		"Cfg": "v3",
 	}, CombineLabels(map[string]string{
 		"A": "v1",
 		"B": "v2",
 	}, map[string]string{
-		"C": "v3",
+		"Cfg": "v3",
 		"B": "v4",
 	}))
 }

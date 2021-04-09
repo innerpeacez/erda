@@ -41,7 +41,7 @@ package dlock
 //		select {
 //		case <-ch: // fine
 //			ch2 <- struct{}{}
-//		case <-ti.C:
+//		case <-ti.Cfg:
 //			assert.Nil(t, 1)
 //			ch2 <- struct{}{}
 //		}

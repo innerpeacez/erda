@@ -76,6 +76,7 @@ require (
 	github.com/robfig/cron v1.2.0
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/satori/go.uuid v1.2.0
+	github.com/gocql/gocql v0.0.0-20210313142353-65899a66288b
 	github.com/shirou/gopsutil/v3 v3.21.3
 	github.com/shopspring/decimal v0.0.0-20200227202807-02e2044944cc // indirect
 	github.com/sirupsen/logrus v1.8.0

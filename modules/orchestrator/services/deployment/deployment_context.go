@@ -1357,7 +1357,7 @@ func (fsm *DeployFSMContext) convertService(serviceName string, service *diceyml
 func buildCurlDownloadFileCmd(files map[string]string, openapiAddr string, token string, dstdir string) string {
 	cmds := []string{}
 	for filename, v := range files {
-		cmds = append(cmds, fmt.Sprintf("curl -L '%s/api/files?file=%s' -H 'Authorization: Bearer %s' > %s",
+		cmds = append(cmds, fmt.Sprintf("curl -Log '%s/api/files?file=%s' -H 'Authorization: Bearer %s' > %s",
 			openapiAddr, v, token, filepath.Join(dstdir, filename)))
 	}
 	return strutil.Join(cmds, "&&")

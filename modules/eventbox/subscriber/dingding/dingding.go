@@ -70,7 +70,7 @@ type DDMessage struct {
 
 type LegacyDDDest []string
 
-// [[A,B,C],[D,E,F],[G,H,I]] -> A,B,C 中随机选一个发送消息，如果失败则换这3个中的下一个地址来重试，D,E,F 和 G,H,I也一样
+// [[A,B,Cfg],[D,E,F],[G,H,I]] -> A,B,Cfg 中随机选一个发送消息，如果失败则换这3个中的下一个地址来重试，D,E,F 和 G,H,I也一样
 type DDDest [][]string
 
 type DDSubscriber struct {
