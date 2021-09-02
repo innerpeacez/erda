@@ -146,7 +146,7 @@ func (s *traceService) handleSpanResponse(spanTree SpanTree) (*pb.GetSpansRespon
 
 func calculateDepth(depth int64, span *pb.Span, spanTree SpanTree) int64 {
 	if span.ParentSpanId == span.Id {
-		return 0
+		span.ParentSpanId = ""
 	}
 	if span.ParentSpanId != "" && spanTree[span.ParentSpanId] != nil {
 		depth += 1
