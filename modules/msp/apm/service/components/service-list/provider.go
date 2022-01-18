@@ -27,11 +27,13 @@ import (
 	"github.com/erda-project/erda-infra/base/servicehub"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn"
 	"github.com/erda-project/erda-infra/providers/component-protocol/components/topn/impl"
+	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cpregister/base"
 	"github.com/erda-project/erda-infra/providers/component-protocol/cptype"
 	"github.com/erda-project/erda-infra/providers/component-protocol/protocol"
 	"github.com/erda-project/erda-infra/providers/i18n"
 	metricpb "github.com/erda-project/erda-proto-go/core/monitor/metric/pb"
+	"github.com/erda-project/erda/modules/msp/apm/service/common/custom"
 	"github.com/erda-project/erda/pkg/math"
 	pkgtime "github.com/erda-project/erda/pkg/time"
 )
@@ -39,6 +41,7 @@ import (
 type provider struct {
 	base.DefaultProvider
 	impl.DefaultTop
+	custom.ServiceInParams
 	Log    logs.Logger
 	I18n   i18n.Translator              `autowired:"i18n" translator:"msp-i18n"`
 	Metric metricpb.MetricServiceServer `autowired:"erda.core.monitor.metric.MetricService"`
@@ -52,20 +55,19 @@ const (
 	Span            string = "24"
 )
 
-// RegisterInitializeOp .
-func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
-	return func(sdk *cptype.SDK) {
-		data := topn.Data{}
+// RegisterInitializeOpV2 .
+func (p *provider) RegisterInitializeOpV2() (opFunc cptype.EnhancedOperationFunc) {
+	opFunc = func(sdk *cptype.SDK) cptype.IStdStructuredPtr {
 		lang := sdk.Lang
-		var records []topn.Record
-		tenantId := p.StdInParamsPtr.Get("tenantId")
-		start := int64(p.StdInParamsPtr.Get("startTime").(float64))
-		end := int64(p.StdInParamsPtr.Get("endTime").(float64))
+		tenantId := p.ServiceInParams.InParamsPtr.TenantId
+		start := p.ServiceInParams.InParamsPtr.StartTime
+		end := p.ServiceInParams.InParamsPtr.EndTime
+
 		ctx := context.Background()
 		interval := (end - start) / 1e3
-
 		switch sdk.Comp.Name {
 		case RpsMaxTop5:
+			var records []topn.Record
 			rpsMaxTop5, err := p.rpsMaxTop5(interval, tenantId, start, end, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -73,7 +75,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			rpsMaxTop5Records := topn.Record{Title: p.I18n.Text(lang, RpsMaxTop5), Span: Span}
 			rpsMaxTop5Records.Items = rpsMaxTop5
 			records = append(records, rpsMaxTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		case RpsMinTop5:
+			var records []topn.Record
 			rpsMinTop5, err := p.rpsMinTop5(interval, tenantId, start, end, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -81,7 +85,9 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			rpsMinTop5Records := topn.Record{Title: p.I18n.Text(lang, RpsMinTop5), Span: Span}
 			rpsMinTop5Records.Items = rpsMinTop5
 			records = append(records, rpsMinTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		case AvgDurationTop5:
+			var records []topn.Record
 			avgDurationTop5, err := p.avgDurationTop5(interval, tenantId, start, end, ctx)
 			if err != nil {
 				p.Log.Error(err)
@@ -89,20 +95,21 @@ func (p *provider) RegisterInitializeOp() (opFunc cptype.OperationFunc) {
 			avgDurationTop5Records := topn.Record{Title: p.I18n.Text(lang, AvgDurationTop5), Span: Span}
 			avgDurationTop5Records.Items = avgDurationTop5
 			records = append(records, avgDurationTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		case ErrorRateTop5:
+			var records []topn.Record
 			errorRateTop5, err := p.errorRateTop5(interval, tenantId, start, end, ctx)
 			if err != nil {
 				p.Log.Error(err)
 			}
-
 			errorRateTop5Records := topn.Record{Title: p.I18n.Text(lang, ErrorRateTop5), Span: Span}
 			errorRateTop5Records.Items = errorRateTop5
 			records = append(records, errorRateTop5Records)
+			return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{List: records}}
 		}
-
-		data.List = records
-		p.StdDataPtr = &data
+		return &impl.StdStructuredPtr{StdDataPtr: &topn.Data{}}
 	}
+	return
 }
 
 func (p *provider) errorRateTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
@@ -208,11 +215,11 @@ func (p *provider) avgDurationTop5(interval int64, tenantId interface{}, start i
 }
 
 func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http,application_rpc "+
+	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(count_sum::field)/%v "+
+		"FROM application_http_service,application_rpc_service "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"GROUP BY target_service_id::tag "+
-		"ORDER BY sum(elapsed_count::field) ASC "+
+		"ORDER BY sum(count_sum::field) ASC "+
 		"LIMIT 5", interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(tenantId.(string)),
@@ -250,11 +257,11 @@ func (p *provider) rpsMinTop5(interval int64, tenantId interface{}, start int64,
 }
 
 func (p *provider) rpsMaxTop5(interval int64, tenantId interface{}, start int64, end int64, ctx context.Context) ([]topn.Item, error) {
-	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(elapsed_count::field)/%v "+
-		"FROM application_http,application_rpc "+
+	statement := fmt.Sprintf("SELECT target_service_id::tag,target_service_name::tag,sum(count_sum::field)/%v "+
+		"FROM application_http_service,application_rpc_service "+
 		"WHERE (target_terminus_key::tag=$terminus_key OR source_terminus_key::tag=$terminus_key) "+
 		"GROUP BY target_service_id::tag "+
-		"ORDER BY sum(elapsed_count::field) DESC "+
+		"ORDER BY sum(count_sum::field) DESC "+
 		"LIMIT 5", interval)
 	queryParams := map[string]*structpb.Value{
 		"terminus_key": structpb.NewStringValue(tenantId.(string)),
@@ -317,7 +324,5 @@ func (p *provider) Init(ctx servicehub.Context) error {
 }
 
 func init() {
-	servicehub.Register("component-protocol.components.service-list", &servicehub.Spec{
-		Creator: func() servicehub.Provider { return &provider{} },
-	})
+	cpregister.RegisterProviderComponent("service-list", "service-list", &provider{})
 }
